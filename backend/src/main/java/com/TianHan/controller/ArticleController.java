@@ -3,19 +3,21 @@ package com.TianHan.controller;
 import cn.hutool.poi.excel.ExcelReader;
 import cn.hutool.poi.excel.ExcelUtil;
 import cn.hutool.poi.excel.ExcelWriter;
-import com.TianHan.mapper.ArticleMapper;
+import com.TianHan.mapper.CategoryMapper;
 import com.TianHan.pojo.Article;
-import com.TianHan.pojo.User;
+import com.TianHan.pojo.Comment;
 import com.TianHan.service.ArticleService;
+import com.TianHan.service.CommentService;
 import com.TianHan.utils.AuthAccess;
 import com.TianHan.utils.Result;
+import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import jakarta.annotation.Resource;
 
 import java.io.InputStream;
 import java.net.URLEncoder;
@@ -27,9 +29,16 @@ import java.util.List;
 @RestController
 @RequestMapping("/article")
 public class ArticleController {
-    @Autowired
+    @Resource
     private ArticleService articleService;
 
+    @Resource
+    private CategoryMapper categoryMapper;
+
+    @Resource
+    private CommentService commentService;
+
+    @AuthAccess
     @GetMapping("/selectById/{id}")
     @ResponseBody
     public Result getArticleById(@PathVariable("id") Integer id){
@@ -88,7 +97,7 @@ public class ArticleController {
             return Result.error();
         }
     }
-    @AuthAccess
+
     @GetMapping("/selectPage")
     @ResponseBody
     public Result selectPage(Article article, @RequestParam() Integer authorId, @RequestParam(defaultValue = "1") Integer pageNum, @RequestParam(defaultValue = "5") Integer pageSize){
@@ -98,16 +107,19 @@ public class ArticleController {
     }
     @AuthAccess
     @GetMapping("/exportWithAuthorId")
-    public void exportWithAuthorId(HttpServletResponse response) throws Exception {
-        List<Article> articleList = articleService.findAllArticlesWithAuthorId();
+    @ResponseBody
+    public void exportWithAuthorId(HttpServletResponse response ) throws Exception {
+       List<Article> articleList = articleService.findAllArticlesWithAuthorId();
 
         //在内存操作，写出到浏览器
         ExcelWriter writer = ExcelUtil.getWriter(true);
-
         //自定义标题别名
-        writer.addHeaderAlias("title", "文章标题");
-        writer.addHeaderAlias("img", "文章封面");
-        writer.addHeaderAlias("description", "文章描述");
+        writer.addHeaderAlias("title", "标题");
+        writer.addHeaderAlias("categoryName","类别");
+        writer.addHeaderAlias("img", "封面");
+        writer.addHeaderAlias("description", "描述");
+        writer.addHeaderAlias("viewCount","浏览数量");
+        writer.addHeaderAlias("comment_count","评论数量");
         writer.addHeaderAlias("content", "内容");
         writer.addHeaderAlias("time", "发布时间");
         writer.addHeaderAlias("authorId", "作者id");
@@ -138,9 +150,13 @@ public class ArticleController {
         ExcelWriter writer = ExcelUtil.getWriter(true);
 
         //自定义标题别名
-        writer.addHeaderAlias("title", "文章标题");
-        writer.addHeaderAlias("img", "文章封面");
-        writer.addHeaderAlias("description", "文章描述");
+
+        writer.addHeaderAlias("title", "标题");
+        writer.addHeaderAlias("categoryName","类别");
+        writer.addHeaderAlias("img", "封面");
+        writer.addHeaderAlias("description", "描述");
+        writer.addHeaderAlias("viewCount","浏览数量");
+        writer.addHeaderAlias("comment_count","评论数量");
         writer.addHeaderAlias("content", "内容");
         writer.addHeaderAlias("time", "发布时间");
         writer.addHeaderAlias("author", "作者");
@@ -168,21 +184,76 @@ public class ArticleController {
         //拿到输入流构建reader
         InputStream inputStream = file.getInputStream();
         ExcelReader reader = ExcelUtil.getReader(inputStream);
-
+        System.out.println("开始读取");
         //读取数据
-        reader.addHeaderAlias("文章标题", "title");
-        reader.addHeaderAlias("文章封面", "img");
-        reader.addHeaderAlias("文章描述", "description");
+        reader.addHeaderAlias("标题", "title");
+        reader.addHeaderAlias("类别", "categoryName");
+        reader.addHeaderAlias("封面", "img");
+        reader.addHeaderAlias("描述", "description");
+        reader.addHeaderAlias("浏览数量", "viewCount");
+        reader.addHeaderAlias("评论数量", "comment_count");
         reader.addHeaderAlias("内容", "content");
         reader.addHeaderAlias("发布时间", "time");
         reader.addHeaderAlias("作者id", "authorId");
         List<Article> articleList = reader.readAll(Article.class);
-
-
         //批量插入
         for (Article article : articleList) {
+            article.setCategoryId(categoryMapper.selectByName(article.getCategoryName()).getId());
             articleService.addArticle(article);
         }
         return Result.success();
+    }
+
+    @GetMapping("/category/{categoryId}")
+    public Result getArticlesByCategory(
+            @PathVariable(required = false) Integer categoryId,
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "10") Integer pageSize,
+            @RequestParam(required = false) String title) {
+
+        PageHelper.startPage(pageNum, pageSize);
+        List<Article> articles = articleService.getArticlesByCategory(categoryId, title);
+        PageInfo<Article> pageInfo = new PageInfo<>(articles);
+        return Result.success(pageInfo);
+    }
+    @AuthAccess
+    @GetMapping("/hot")
+    public Result getHotArticles() {
+        List<Article> hotArticles = articleService.getHotArticles();
+        return Result.success(hotArticles);
+    }
+    @AuthAccess
+    @PostMapping("/view/{id}")
+    public Result incrementViewCount(@PathVariable Integer id) {
+        articleService.incrementViewCount(id);
+        return Result.success();
+    }
+    @AuthAccess
+    @GetMapping("/comments/{articleId}")
+    public Result getComments(@PathVariable Integer articleId) {
+        try {
+            if (articleId == null || articleId <= 0) {
+                return Result.error("400", "无效的文章ID");
+            }
+            List<Comment> comments = commentService.getCommentsByArticleId(articleId);
+            return Result.success(comments);
+        } catch (Exception e) {
+            log.error("获取评论失败", e);
+            return Result.error("500", "获取评论失败：" + e.getMessage());
+        }
+    }
+
+    @PostMapping("/comment")
+    public Result addComment(@RequestBody Comment comment) {
+        try {
+            if (comment == null || comment.getArticleId() == null) {
+                return Result.error("400", "评论信息不完整");
+            }
+            commentService.addComment(comment);
+            return Result.success();
+        } catch (Exception e) {
+            log.error("添加评论失败", e);
+            return Result.error("500", "添加评论失败：" + e.getMessage());
+        }
     }
 }

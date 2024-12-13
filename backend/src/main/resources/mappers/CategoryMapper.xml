@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.TianHan.mapper.CategoryMapper">
+
+    <select id="selectAll" resultType="com.TianHan.pojo.Category">
+        SELECT id, name FROM categories
+    </select>
+    <select id="selectById" parameterType="int" resultType="com.TianHan.pojo.Category">
+        SELECT id, name FROM categories WHERE id = #{id}
+    </select>
+    <select id="selectByName" parameterType="String" resultType="com.TianHan.pojo.Category">
+        SELECT id, name FROM categories WHERE name = #{name}
+    </select>
+    <insert id="insert" parameterType="com.TianHan.pojo.Category">
+        INSERT INTO categories (name) VALUES (#{name})
+    </insert>
+    <update id="update" parameterType="com.TianHan.pojo.Category">
+        UPDATE categories SET name = #{name} WHERE id = #{id}
+    </update>
+    <delete id="delete" parameterType="int">
+        DELETE FROM categories WHERE id = #{id}
+    </delete>
+
+</mapper> 

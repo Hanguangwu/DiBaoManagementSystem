@@ -13,6 +13,7 @@ import com.TianHan.utils.Result;
 import com.github.pagehelper.PageInfo;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -23,8 +24,12 @@ import java.util.stream.Collectors;
 @RestController
 public class WebController {
 
-    @Resource
-    private UserService userService;
+    private final UserService userService;
+
+    @Autowired
+    public WebController(UserService userService) {
+        this.userService = userService;
+    }
 
     @Resource
     private ArticleService articleService;
@@ -61,8 +66,14 @@ public class WebController {
     @AuthAccess
     @GetMapping("/show")
     @ResponseBody
-    public Result getAllData(Article article, @RequestParam(defaultValue = "1") Integer pageNum, @RequestParam(defaultValue = "5") Integer pageSize) {
-        PageInfo<Article> articlePageInfo = articleService.findList(article, pageNum, pageSize);
+    public Result getAllData(Article article, @RequestParam(defaultValue = "1") Integer pageNum, @RequestParam(defaultValue = "5") Integer pageSize,@RequestParam(defaultValue = "0")Integer categoryId ) {
+        PageInfo<Article> articlePageInfo= new PageInfo<>();
+        if(categoryId==0){
+         articlePageInfo = articleService.findList(article, pageNum, pageSize);}
+        else{
+        articlePageInfo = articleService.getArticlesByCategory(article,pageNum, pageSize, categoryId);
+        }
+
         return Result.success(articlePageInfo);
     }
 

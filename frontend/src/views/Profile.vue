@@ -9,7 +9,7 @@
                      :headers="{token: data.user.token}"
                      :show-file-list="false" :on-success="handleAvatarSuccess">
             <img v-if="data.user.avatar" :src="data.user.avatar" class="avatar">
-            <el-icon v-else class="avatar-uploader-icon"></el-icon>
+            <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
           </el-upload>
 
         </div>
@@ -72,17 +72,13 @@ const data = reactive({
   }
 })
 
-const updateProfile = () => { //修改的对象有id
-  data.form.id = data.user.id
+const updateProfile = () => {
   formRef.value.validate((valid) => {
     if(valid){
       service.put('/user/update', data.user).then((res) => {
         if (res.code === "200") {
           ElMessage.success('修改成功')
-          localStorage.removeItem('grantedUser')
-          // setTimeout(() => {
-          //   window.location.href = '/login'
-          // }, 500)
+          localStorage.setItem('grantedUser', JSON.stringify(data.user))
         } else {
           ElMessage.error(res.msg)
         }
@@ -91,13 +87,19 @@ const updateProfile = () => { //修改的对象有id
   })
 }
 
-
-
-
-
-
 const handleAvatarSuccess = (res) => {
-  data.form.avatar = res.data
+  if (res.code === '200') {
+    const avatarUrl = res.data
+    
+    data.user.avatar = avatarUrl
+    localStorage.setItem('grantedUser', JSON.stringify(data.user))
+    ElMessage.success('头像更新成功')
+    setTimeout(() => {
+      location.reload()
+    }, 1000)
+  } else {
+    ElMessage.error('头像更新失败')
+  }
 }
 
 </script>

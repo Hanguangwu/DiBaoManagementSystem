@@ -1,7 +1,7 @@
 <template>
   <div class="card" style="margin: 5px;">
     <h1>部门数据展示</h1>
-    <el-input v-model="data.name" placeholder="请输入内容" :prefix-icon="Search" clearable></el-input>
+    <el-input v-model="data.name" placeholder="请输入部门名" :prefix-icon="Search" clearable></el-input>
     <el-button type="primary" @click="loadData" style="margin-top: 10px;">查询</el-button>
     <el-button type="primary" @click="resetData" style="margin-top: 10px;">重置</el-button>
   </div>

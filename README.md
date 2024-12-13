@@ -43,8 +43,9 @@ mybatis:
 
 打开`Main.java`启动后端
 
-
 ## SQL脚本
+
+完整的SQL脚本见`tiandi.sql`文件。
 
 ```sql
 CREATE DATABASE tiandi;

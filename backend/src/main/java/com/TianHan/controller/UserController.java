@@ -93,7 +93,7 @@ public class UserController {
     @PutMapping("/update")
     @ResponseBody
     public Result updateUser(@RequestBody User user) {
-        int result = userService.updateUser(user);
+        int result = userService.updateUser(user,user.getDepartmentName());
         if (result == 1) {
             log.info("更新成功");
             return Result.success();

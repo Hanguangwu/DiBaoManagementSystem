@@ -97,18 +97,8 @@ public class UserService {
         return result;
     }
 
-    public int updateUser(User user) {
-        String username = user.getUsername();
-        User dbUser = userMapper.selectByUsername(username);
-        if (dbUser == null) {
-            throw new CustomException("500", "用户不存在");
-        }
-        dbUser.setEmail(user.getEmail());
-        dbUser.setNickname(user.getNickname());
-        dbUser.setGender(user.getGender());
-        dbUser.setAvatar(user.getAvatar());
-        //dbUser.setDepartmentId(user.getDepartmentId());
-        int result = userMapper.update(dbUser);
+    public int updateUser(User user, String departmentName) {
+        int result = userMapper.update(user);
         log.info("更新用户成功:{}", user);
         return result;
     }
@@ -145,7 +135,7 @@ public class UserService {
         if (!dbUser.getPassword().equals(MD5Util.encrypt(password))) {
             throw new CustomException("500", "用户名或密码错误");
         }
-        //账号密码正确
+        //账号密码确
         //根据用户唯一标识生成token
         String token = TokenUtils.generateToken(String.valueOf(dbUser.getUid()), dbUser.getPassword());
         dbUser.setToken(token);

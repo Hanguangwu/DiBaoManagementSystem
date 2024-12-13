@@ -1,39 +1,47 @@
 <template>
   <div class="card" style="margin: 5px;">
     <h1>用户数据展示</h1>
-    <el-input v-model="data.username" placeholder="请输入内容" :prefix-icon="Search" clearable></el-input>
+    <el-input v-model="data.username" placeholder="请输入要搜索的用户名" :prefix-icon="Search" clearable></el-input>
     <el-button type="primary" @click="loadData" style="margin-top: 10px;">查询</el-button>
     <el-button type="primary" @click="resetData" style="margin-top: 10px;">重置</el-button>
   </div>
-  <div class="card" style="margin: 5px;">
+  <div class="card" style="margin: 5px; display: flex; align-items: center; gap: 10px;">
     <el-button type="primary" @click="handleAdd">
-      <Edit />新增用户
+      <Edit/>
+      新增用户
     </el-button>
     <el-button type="danger" @click="handleBatchDelete">
-      <Delete />批量删除
+      <Delete/>
+      批量删除
     </el-button>
-    <el-upload style="margin-top: 10px;" name="file" accept=".xls,.xlsx" action="http://localhost:8080/user/batchInsert" :show-file-list="false" :on-success="batchInsertSuccess">
-      <el-button type="info">导入</el-button>
-      <div style="margin: 10px;">请选择要导入的Excel文件</div>
+    <el-upload
+        name="file"
+        accept=".xls,.xlsx"
+        action="http://localhost:8080/user/batchInsert"
+        :show-file-list="false"
+        :on-success="batchInsertSuccess"
+    >
+      <el-button type="info" style="margin-left: 60vh;">导入</el-button>
+      <div>请选择要导入的Excel文件</div>
     </el-upload>
-    <el-button style="margin-top: 10px;" type="success" @click="handleExport">导出</el-button>
+    <el-button type="success" @click="handleExport">导出</el-button>
   </div>
   <div class="card" style="margin: 5px;">
     <el-table :data="data.tableData" stripe style="width: 100%" highlight-current-row
-      @selection-change="handleSelectionChange">
+              @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55"></el-table-column>
-      <el-table-column prop="username" label="用户名" />
-      <el-table-column prop="email" label="邮箱" />
+      <el-table-column prop="username" label="用户名"/>
+      <el-table-column prop="email" label="邮箱"/>
       <el-table-column prop="avatar" label="头像">
         <template #default="scope">
           <img v-if="scope.row.avatar" :src="scope.row.avatar"
-            style="display:block; width: 40px; height: 40px; border-radius: 50%;" />
+               style="display:block; width: 40px; height: 40px; border-radius: 50%;"/>
         </template>
       </el-table-column>
-      <el-table-column prop="nickname" label="昵称" />
-      <el-table-column prop="gender" label="性别" />
-      <el-table-column prop="status" label="权限等级" />
-      <el-table-column prop="departmentName" label="部门" />
+      <el-table-column prop="nickname" label="昵称"/>
+      <el-table-column prop="gender" label="性别"/>
+      <el-table-column prop="status" label="权限等级"/>
+      <el-table-column prop="departmentName" label="部门"/>
       <el-table-column label="操作" width="140">
         <template #default="scope">
           <el-button circle type="primary" :icon="Edit" @click="handleEdit(scope.row)"></el-button>
@@ -42,31 +50,37 @@
       </el-table-column>
     </el-table>
     <el-pagination @size-change="loadData" @prev-click="loadData" @next-click="loadData" @current-change="loadData"
-      v-model:current-page="data.pageNum" v-model:page-size="data.pageSize" :page-sizes="[5, 10, 15, 20]" background
-      layout="total, sizes, prev, pager, next, jumper" :total=data.total />
+                   v-model:current-page="data.pageNum" v-model:page-size="data.pageSize" :page-sizes="[5, 10, 15, 20]"
+                   background
+                   layout="total, sizes, prev, pager, next, jumper" :total=data.total>
+    </el-pagination>
   </div>
   <div>
     <el-dialog v-model="data.formVisible" title="用户信息" width="500px" destroy-on-close>
       <el-form ref="formRef" :rules="data.rules" :model="data.form" label-width="80px"
-        style="padding-right: 40px; padding-top:20px">
+               style="padding-right: 40px; padding-top:20px">
         <el-form-item label="用户名" prop="username" placeholder="请输入名称">
-          <el-input :disabled="data.form.uid" v-model="data.form.username" autocomplete="off" />
+          <el-input :disabled="data.form.uid" v-model="data.form.username" autocomplete="off"/>
         </el-form-item>
         <el-form-item label="邮箱" prop="email" placeholder="请输入邮箱">
-          <el-input v-model="data.form.email" autocomplete="off" />
+          <el-input v-model="data.form.email" autocomplete="off"/>
         </el-form-item>
         <el-form-item label="部门">
           <el-select style="width: 100%;" v-model="data.form.departmentName">
-            <el-option v-for="item in data.departments" :key="item.id" :label="item.name" :value="item.name"></el-option>
+            <el-option v-for="item in data.departments" :key="item.id" :label="item.name" :disabled="data.form.status === '用户'"
+                       :value="item.name"></el-option>
           </el-select>
         </el-form-item>
         <el-form-item label="头像">
-          <el-upload action="http://localhost:8080/files/upload" :headers="{'token': data.user.token}" list-type="picture" :on-success="handleAvatarSuccess">
-            <el-icon style="font-size: 20px; margin-right: 10px;" type="picture-outline"><Avatar /></el-icon>
+          <el-upload action="http://localhost:8080/files/upload" :headers="{'token': data.user.token}"
+                     list-type="picture" :on-success="handleAvatarSuccess">
+            <el-icon style="font-size: 20px; margin-right: 10px;" type="picture-outline">
+              <Avatar/>
+            </el-icon>
           </el-upload>
         </el-form-item>
         <el-form-item label="昵称" prop="nickname" placeholder="请输入昵称">
-          <el-input v-model="data.form.nickname" autocomplete="off" />
+          <el-input v-model="data.form.nickname" autocomplete="off"/>
         </el-form-item>
         <el-form-item label="性别">
           <el-radio-group v-model="data.form.gender">
@@ -75,7 +89,8 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item label="权限等级" prop="status">
-          <el-input :rows="3" type="textarea" v-model="data.form.status" autocomplete="off" placeholder="请输入权限等级" />
+          <el-input :rows="3" type="textarea" v-model="data.form.status" autocomplete="off" :disabled="data.form.status === '用户'"
+                    placeholder="请输入权限等级"/>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -89,10 +104,10 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue';
-import { Search, Edit, Delete } from '@element-plus/icons-vue';
+import {reactive, ref} from 'vue';
+import {Search, Edit, Delete} from '@element-plus/icons-vue';
 import service from '@/utils/request';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import {ElMessage, ElMessageBox} from 'element-plus';
 
 const data = reactive({
   user: JSON.parse(localStorage.getItem('grantedUser') || '{}'),
@@ -108,15 +123,15 @@ const data = reactive({
   ids: [],
   rules: {
     username: [
-      { required: true, message: '请输入用户名', trigger: 'blur' },
+      {required: true, message: '请输入用户名', trigger: 'blur'},
       // { min: 3, max: 10, message: '长度在 3 到 10 个字符', trigger: 'blur' }
     ],
     nickname: [
-      { required: true, message: '请输入昵称', trigger: 'blur' },
+      {required: true, message: '请输入昵称', trigger: 'blur'},
       // { min: 3, max: 10, message: '长度在 3 到 10 个字符', trigger: 'blur' }
     ],
     status: [
-      { required: true, message: '请输入权限等级', trigger: 'blur' },
+      {required: true, message: '请输入权限等级', trigger: 'blur'},
       // { min: 3, max: 10, message: '长度在 3 到 10 个字符', trigger: 'blur' }
     ]
   }
@@ -172,7 +187,7 @@ const handleAvatarSuccess = (res) => {
 }
 
 const handleDelete = (uid) => {
-  ElMessageBox.confirm('确认删除该条数据吗？', '确认删除', { type: 'warning' }).then(() => {
+  ElMessageBox.confirm('确认删除该条数据吗？', '确认删除', {type: 'warning'}).then(() => {
     service.delete('/user/delete/' + uid).then((res) => {
       if (res.code === "200") {
         ElMessage.success('删除成功')
@@ -194,10 +209,10 @@ const handleBatchDelete = () => {
     ElMessage.error('请先选择要删除的数据')
     return
   }
-  ElMessageBox.confirm('确认批量删除选中数据吗？', '确认批量删除', { type: 'warning' }).then(() => {
+  ElMessageBox.confirm('确认批量删除选中数据吗？', '确认批量删除', {type: 'warning'}).then(() => {
 
     //取出选中行的id组成数组
-    service.delete('/user/batchDelete', { data: data.ids }).then((res) => {
+    service.delete('/user/batchDelete', {data: data.ids}).then((res) => {
       if (res.code === "200") {
         ElMessage.success('批量删除成功')
         data.formVisible = false

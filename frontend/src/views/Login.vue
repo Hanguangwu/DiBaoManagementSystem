@@ -1,5 +1,5 @@
 <template>
-  <div class="login-container">-->
+  <div class="login-container">
     <div class="login-box">
       <div style="padding: 50px 30px; background-color: white; border-radius: 5px;">
         <el-form ref="loginFormRef" :rules="rules" :model="user" style="width: 300px;">
@@ -123,6 +123,7 @@ function login() {
       service.post('/login', user).then(res => {
         if (res.code === '200') {
           localStorage.setItem('grantedUser', JSON.stringify(res.data));
+
           router.push('/home');
         } else {
           ElMessage.error('登录失败，请检查用户名或密码');

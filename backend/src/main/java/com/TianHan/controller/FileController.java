@@ -33,7 +33,7 @@ public class FileController {
     private String port;
 
     //System.getProperty("user.dir") 获取当前项目路径
-    private static final String filePath = System.getProperty("user.dir") + "\\backend/src/main/resources/static/files/";
+    private static final String filePath = System.getProperty("user.dir") + "\\backend\\src\\main\\resources\\static\\files\\";
 
     @AuthAccess
     @GetMapping("/download/{filename}")

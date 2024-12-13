@@ -6,23 +6,27 @@
     <el-button type="primary" @click="resetData" style="margin-top: 10px;">重置</el-button>
   </div>
   <div class="card" style="margin: 5px;">
-    <el-button type="primary" @click="handleAdd" >
-      <Edit />新增文章
-    </el-button>
-    <el-button type="danger" @click="handleBatchDelete">
-      <Delete />批量删除
-    </el-button>
-    <el-upload style="margin-top: 10px;" name="file" accept=".xls,.xlsx" action="http://localhost:8080/article/batchInsert" :show-file-list="false" :on-success="batchInsertSuccess">
-      <el-button type="info">导入</el-button>
-      <div style="margin: 10px;">请选择要导入的Excel文件</div>
-    </el-upload>
-    <el-button style="margin-top: 10px;" type="success" @click="handleExportClick">导出</el-button>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <el-button type="primary" @click="handleAdd">
+        <Edit />新增文章
+      </el-button>
+      <el-button type="danger" @click="handleBatchDelete">
+        <Delete />批量删除
+      </el-button>
+      <el-upload style="margin-left: 60vh;" name="file" accept=".xls,.xlsx"  v-if="data.user.status==='管理员'"
+                 action="http://localhost:8080/article/batchInsert" :show-file-list="false" :on-success="batchInsertSuccess">
+        <el-button type="info">导入</el-button>
+        <div style="margin: 10px;">请选择要导入的Excel文件</div>
+      </el-upload>
+      <el-button  v-if="data.user.status==='管理员'" type="success" @click="handleExportClick">导出</el-button>
+    </div>
   </div>
   <div class="card" style="margin: 5px;">
     <el-table :data="data.tableData" stripe style="width: 100%" highlight-current-row
       @selection-change="handleSelectionChange">
       <el-table-column type="selection" width="55"></el-table-column>
       <el-table-column prop="title" label="标题" />
+      <el-table-column prop="categoryName" label="类别" />
       <el-table-column prop="img" label="封面">
         <template #default="scope">
           <el-image v-if="scope.row.img" :src="scope.row.img" :preview-src-list="[scope.row.img]" preview-teleported
@@ -30,9 +34,14 @@
         </template>
       </el-table-column>
       <el-table-column prop="description" label="描述" show-overflow-tooltip />
+      <el-table-column prop="viewCount" label="浏览数量" />
+      <el-table-column prop="comment_count" label="评论数量" />
       <el-table-column label="内容">
         <template #default="scope">
-          <el-button type="text" @click="view(scope.row.content)">查看内容</el-button>
+          <div style="display: flex; flex-direction: column;  ">
+            <el-button type="text" @click="view(scope.row.content) " style="margin-right: 10px;">查看内容</el-button>
+            <el-button type="text" @click="viewDetails(scope.row.id)" style="margin-right: 20px;">查看详情</el-button>
+          </div>
         </template>
       </el-table-column>
       <el-table-column prop="time" label="发布时间" />
@@ -54,6 +63,16 @@
         <el-form-item label="标题" prop="title" placeholder="请输入标题">
           <el-input v-model="data.form.title" autocomplete="off" />
         </el-form-item>
+        <el-form-item label="类别" prop="categoryId">
+          <el-select v-model="data.form.categoryId" placeholder="请选择类别">
+            <el-option
+              v-for="category in categories"
+              :key="category.id"
+              :label="category.name"
+              :value="category.id">
+            </el-option>
+          </el-select>
+        </el-form-item>
         <el-form-item label="封面">
           <el-upload action="http://localhost:8080/files/upload"  :headers="{token: data.user.token}" :file-list="fileList" list-type="picture" :on-success="handleImgSuccess">
             <el-icon type="primary">上传封面</el-icon>
@@ -69,9 +88,6 @@
               :editorConfig="editorConfig" @onCreated="handleCreated" />
           </div>
         </el-form-item>
-<!--        <el-form-item label="发布时间">-->
-<!--          <el-input v-model="data.form.time" autocomplete="off" placeholder="请输入发布时间" />-->
-<!--        </el-form-item>-->
       </el-form>
       <template #footer>
         <div class="dialog-footer">
@@ -87,13 +103,13 @@
         <span class="dialog-footer">
           <el-button type="primary" @click="data.viewVisible = false">关闭</el-button>
         </span>
-        </template>
+      </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { onBeforeUnmount, reactive, ref } from 'vue';
+import { onBeforeUnmount, reactive, ref, onMounted } from 'vue';
 import { Search, Edit, Delete } from '@element-plus/icons-vue';
 import service from '@/utils/request';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -124,6 +140,9 @@ const data = reactive({
       { required: true, message: '请输入标题', trigger: 'blur' },
       { min: 2, max: 50, message: '长度在 2 到 50 个字符', trigger: 'blur' }
     ],
+    categoryName: [
+      { required: true, message: '请选择类别', trigger: 'blur' }
+    ],
     description: [
       { required: true, message: '请输入描述', trigger: 'blur' },
       { min: 2, max: 200, message: '长度在 2 到 200 个字符', trigger: 'blur' }
@@ -133,6 +152,22 @@ const data = reactive({
       { min: 2, max: 5000, message: '长度在 2 到 5000 个字符', trigger: 'blur' }
     ]
   }
+})
+
+const categories = ref([]) // 存储类别数据
+
+const loadCategories = async () => {
+  try {
+    const response = await service.get('/categories') // 假设有一个获取类别的接口
+    categories.value = response.data
+  } catch (error) {
+    console.error('获取类别失败:', error)
+  }
+}
+
+onMounted(() => {
+  loadCategories()
+  loadData()
 })
 
 /* wangEditor5 初始化开始 */
@@ -287,10 +322,17 @@ const batchInsertSuccess = (res) => {
 
 const handleExportClick = () => {
   //下载流文件，不是JSON文件
-  window.open('http://localhost:8080/article/exportWithAuthorId')
+  window.open(`http://localhost:8080/article/exportWithAuthorId`)
   //打开流链接，浏览器帮忙下载
+}
+
+const viewDetails = (id) => {
+  // 跳转到文章详情页面
+  window.location.href = `/news/${id}`; // 根据路由配置修改为 /news/:id
 }
 
 </script>
 
-<style scoped></style>
+<style scoped>
+/* 之前的样式可以恢复或删除 */
+</style>
